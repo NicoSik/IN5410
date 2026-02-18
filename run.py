@@ -35,7 +35,7 @@ def main():
     schedule, optimal_load, optimal_cost = optimize(base_load, prices, shiftable)
     
     # 5. Show results
-    print_summary(naive_cost, optimal_cost, schedule)
+    print_summary(naive_cost, optimal_cost, schedule, shiftable)
     
     # 6. Generate PDF report (optional)
     try:
