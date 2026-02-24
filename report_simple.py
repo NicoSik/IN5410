@@ -10,6 +10,7 @@ except ImportError:
 
 from typing import Dict, List
 from datetime import datetime
+import os
 
 
 def generate_simple_report(
@@ -30,6 +31,10 @@ def generate_simple_report(
     
     savings = naive_cost - optimal_cost
     savings_pct = (savings / naive_cost * 100) if naive_cost > 0 else 0
+    
+    # Create output folder for images
+    output_folder = filename.replace('.pdf', '_images')
+    os.makedirs(output_folder, exist_ok=True)
     
     with PdfPages(filename) as pdf:
         # Page 1: Summary
@@ -69,7 +74,9 @@ OPTIMAL SCHEDULE
         plt.text(0.1, 0.05, summary, fontsize=11, verticalalignment='bottom',
                 family='monospace', bbox=dict(boxstyle='round', facecolor='white'))
         
+        # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '01_summary.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Page 2: Price curve
@@ -94,7 +101,9 @@ OPTIMAL SCHEDULE
         plt.grid(axis='both', alpha=0.3, linestyle='--')
         plt.tight_layout()
         
+        # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '02_prices.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Page 3: Naive Load with Stacked Shiftable Appliances
@@ -102,7 +111,7 @@ OPTIMAL SCHEDULE
         plt.clf()
         
         # Calculate base load (non-shiftable)
-        from data_setup import calculate_naive_schedule, calculate_base_load, get_non_shiftable_appliances
+        from data_setup import calculate_worst_schedule, calculate_base_load, get_non_shiftable_appliances
         from helpers import add_appliance_to_load
         
         non_shiftable = get_non_shiftable_appliances()
@@ -145,13 +154,15 @@ OPTIMAL SCHEDULE
         
         plt.xlabel('Hour', fontsize=12, fontweight='bold')
         plt.ylabel('Load (kWh)', fontsize=12, fontweight='bold')
-        plt.title('Naive Schedule - Load Distribution', fontsize=14, fontweight='bold')
+        plt.title('Worst Schedule - Load Distribution', fontsize=14, fontweight='bold')
         plt.xticks(hours, [f'{h:02d}:00' for h in hours], rotation=45)
         plt.legend(loc='upper left')
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
+        # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '03_naive_schedule.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Page 4: Optimal Load with Stacked Shiftable Appliances
@@ -185,14 +196,16 @@ OPTIMAL SCHEDULE
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
+        # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '04_optimal_schedule.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Page 5: Cost comparison
         fig = plt.figure(figsize=(8, 5))
         plt.clf()
         
-        categories = ['Naive', 'Optimal']
+        categories = ['Worst', 'Optimal']
         values = [naive_cost, optimal_cost]
         bar_colors = ['#E76F51', "#5AC768"]  # Dark coral and dark teal
         
@@ -209,7 +222,9 @@ OPTIMAL SCHEDULE
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
+        # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '05_cost_comparison.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Metadata
@@ -218,6 +233,7 @@ OPTIMAL SCHEDULE
         d['CreationDate'] = datetime.now()
     
     print(f"✅ PDF saved: {filename}")
+    print(f"✅ Images saved in: {output_folder}/")
 
 
 if __name__ == "__main__":
