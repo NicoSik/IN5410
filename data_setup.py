@@ -1,8 +1,6 @@
 """Data setup - Generate prices and appliance configurations."""
 import random
 from typing import List
-
-
 def generate_prices(seed: int = 42) -> List[float]:
     """
     Generate 24-hour electricity prices (NOK/kWh).
@@ -112,25 +110,25 @@ def get_shiftable_appliances() -> List[dict]:
             'name': 'Dishwasher',
             'energy': 1.44,  # kWh
             'duration': 2,   # hours
-            'allowed_hours': [19, 20, 21, 22, 0, 1, 2, 3, 4, 5]  # Overnight
+            'allowed_hours': list(range(0, 24))  # Any hour /using app
         },
         {
             'name': 'Laundry',
             'energy': 1.94,
             'duration': 2,
-            'allowed_hours': [8, 9, 10, 11, 12, 13, 14, 15]  # Daytime
+            'allowed_hours': list(range(12, 23))  # 12:00-22:00
         },
         {
             'name': 'Dryer',
             'energy': 2.50,
             'duration': 2,
-            'allowed_hours': [8, 9, 10, 11, 12, 13, 14, 15]  # Daytime
+            'allowed_hours': list(range(14, 24)) + list(range(0, 1))  # 14:00-00:00
         },
         {
             'name': 'EV Charging',
             'energy': 9.90,
             'duration': 6,
-            'allowed_hours': [22, 23, 0, 1]  # Overnight
+            'allowed_hours': list(range(16, 24)) + list(range(0, 8))  # 16:00-07:00
         }
     ]
 
@@ -146,7 +144,7 @@ def calculate_base_load(non_shiftable: List[dict]) -> List[float]:
     return base_load
 
 
-def calculate_naive_schedule(
+def calculate_worst_schedule(
     base_load: List[float],
     shiftable: List[dict]
 ) -> List[float]:

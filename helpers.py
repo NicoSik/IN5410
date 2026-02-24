@@ -21,11 +21,25 @@ def add_appliance_to_load(
         load[h] += energy_per_hour
 
 
-def format_schedule(schedule: dict) -> str:
-    """Format schedule for display."""
+def format_schedule(schedule: dict, appliances: List[dict] = None) -> str:
+    """Format schedule for display with duration and end time."""
     lines = []
-    for name, start in sorted(schedule.items()):
-        lines.append(f"  {name:20s} → {start:02d}:00")
+    
+    if appliances:
+        # Create a map of appliance names to their info
+        app_map = {app['name']: app for app in appliances}
+        
+        for name, start in sorted(schedule.items()):
+            if name in app_map:
+                duration = app_map[name]['duration']
+                end = (start + duration) % 24
+                lines.append(f"  {name:20s} → {start:02d}:00 - {end:02d}:00 ({duration}h)")
+            else:
+                lines.append(f"  {name:20s} → {start:02d}:00")
+    else:
+        for name, start in sorted(schedule.items()):
+            lines.append(f"  {name:20s} → {start:02d}:00")
+    
     return "\n".join(lines)
 
 
@@ -42,7 +56,8 @@ def format_hourly_table(load: List[float], prices: List[float]) -> str:
 def print_summary(
     naive_cost: float,
     optimal_cost: float,
-    schedule: dict
+    schedule: dict,
+    shiftable: List[dict] = None
 ) -> None:
     """Print optimization results summary."""
     savings = naive_cost - optimal_cost
@@ -53,7 +68,7 @@ def print_summary(
     print("="*60)
     
     print("\nOptimal Schedule:")
-    print(format_schedule(schedule))
+    print(format_schedule(schedule, shiftable))
     
     print(f"\nCosts:")
     print(f"  Naive schedule:     {naive_cost:.2f} NOK/day")

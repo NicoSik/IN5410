@@ -4,7 +4,7 @@ from data_setup import (
     get_non_shiftable_appliances,
     get_shiftable_appliances,
     calculate_base_load,
-    calculate_naive_schedule,
+    calculate_worst_schedule,
     print_data_summary
 )
 from optimize import optimize
@@ -26,16 +26,16 @@ def main():
     # 2. Calculate base load (fixed consumption)
     base_load = calculate_base_load(non_shiftable)
     
-    # 3. Calculate naive cost (no optimization)
-    naive_load = calculate_naive_schedule(base_load, shiftable)
-    naive_cost = calculate_cost(naive_load, prices)
+    # 3. Calculate worst cost (no optimization)
+    worst_load = calculate_worst_schedule(base_load, shiftable)
+    worst_cost = calculate_cost(worst_load, prices)
     
     # 4. Optimize
     print("\n⚙️  Optimizing schedule...")
     schedule, optimal_load, optimal_cost = optimize(base_load, prices, shiftable)
     
     # 5. Show results
-    print_summary(naive_cost, optimal_cost, schedule)
+    print_summary(worst_cost, optimal_cost, schedule, shiftable)
     
     # 6. Generate PDF report (optional)
     try:
@@ -52,8 +52,8 @@ def main():
             schedule=schedule,
             optimal_load=optimal_load,
             optimal_cost=optimal_cost,
-            naive_load=naive_load,
-            naive_cost=naive_cost,
+            naive_load=worst_load,
+            naive_cost=worst_cost,
             shiftable=shiftable
         )
     except ImportError:
