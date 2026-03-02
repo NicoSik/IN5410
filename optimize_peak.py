@@ -3,13 +3,13 @@ Question 4: Optimization with Peak Load Minimization.
 
 PROBLEM FORMULATION:
     
-    Objective: Minimize  α × Σ(t=0..23) L(t)×P(t)  +  β × L_peak
+    Objective: Minimize  Σ(t=0..23) L(t)×P(t)  +  λ × L_peak
     
     Where:
         L(t)    = total load at hour t
         P(t)    = price at hour t
         L_peak  = peak load variable (maximum load across all hours)
-        α, β    = weighting factors (trade-off between cost and peak)
+        λ       = weighting factor (trade-off between cost and peak)
     
     Subject to:
         1. L(t) ≤ L_peak  for all t ∈ {0, ..., 23}
@@ -22,7 +22,7 @@ PROBLEM FORMULATION:
         For each combination, compute:
           - total cost = Σ L(t) × P(t)
           - peak load  = max(L(t)) over all t
-          - objective  = α × cost + β × peak load
+          - objective  = cost + λ × peak load
         Select the combination with minimum objective.
     
     COMPARISON WITH Q2:
@@ -38,23 +38,21 @@ def optimize_with_peak_constraint(
     base_load: List[float],
     prices: List[float],
     appliances: List[dict],
-    alpha: float = 1.0,
-    beta: float = 5.0
+    lambda_: float = 5.0
 ) -> Tuple[Dict[str, int], List[float], float, float]:
     """
     Find the schedule that minimizes both energy cost AND peak load.
     
-    Objective: minimize  α × total_cost + β × peak_load
+    Objective: minimize  total_cost + λ × peak_load
     Constraint: L(t) ≤ L_peak for all t
     
     Args:
         base_load: Fixed hourly load from non-shiftable appliances (24 hours)
         prices: Hourly electricity prices (24 hours)
         appliances: List of {name, energy, duration, allowed_hours}
-        alpha: Weight for energy cost (default 1.0)
-        beta: Weight for peak load penalty (default 5.0)
-              Higher β → more peak shaving, potentially higher cost
-              Lower β  → less peak shaving, closer to Q2 result
+        lambda_: Weight for peak load penalty (default 5.0)
+                 Higher λ → more peak shaving, potentially higher cost
+                 Lower λ  → less peak shaving, closer to Q2 result
     
     Returns:
         (schedule, final_load, total_cost, peak_load)
@@ -89,7 +87,7 @@ def optimize_with_peak_constraint(
         peak = max(load)
         
         # Combined objective: minimize cost AND peak load
-        objective = alpha * cost + beta * peak
+        objective = cost + lambda_ * peak
         
         # Keep if best
         if objective < best_objective:

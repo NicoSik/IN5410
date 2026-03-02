@@ -26,7 +26,7 @@ def generate_q4_report(
     worst_load: List[float],
     worst_cost: float,
     shiftable: List[dict],
-    beta: float = 5.0
+    lambda_: float = 5.0
 ):
     """Generate Q4 comparison PDF report."""
     
@@ -72,7 +72,7 @@ def generate_q4_report(
                 ha='center', fontsize=18, fontweight='bold')
         plt.text(0.5, 0.88, f"{datetime.now().strftime('%B %d, %Y')}",
                 ha='center', fontsize=11)
-        plt.text(0.5, 0.84, f"Objective: minimize  α×cost + β×peak_load    (β = {beta})",
+        plt.text(0.5, 0.84, f"Objective: minimize  cost + λ×peak_load    (λ = {lambda_})",
                 ha='center', fontsize=11, style='italic')
         
         summary = f"""
@@ -122,7 +122,7 @@ KEY INSIGHT
         
         # Q4 stacked bar chart
         _plot_stacked_load(ax2, hours, base_load_only, q4_schedule, shiftable, colors,
-                           f'Q4: Cost + Peak Optimization (β={beta})', q4_peak)
+                           f'Q4: Cost + Peak Optimization (λ={lambda_})', q4_peak)
         
         fig.suptitle('Load Distribution Comparison', fontsize=16, fontweight='bold', y=1.02)
         fig.tight_layout()
@@ -212,13 +212,13 @@ KEY INSIGHT
         
         from optimize_peak import optimize_with_peak_constraint
         
-        betas = [0, 0.5, 1, 2, 3, 5, 8, 10, 15, 20, 30, 50]
+        lambdas = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10]
         scan_costs = []
         scan_peaks = []
         
-        for b in betas:
+        for lam in lambdas:
             _, load_b, cost_b, peak_b = optimize_with_peak_constraint(
-                base_load_only, prices, shiftable, alpha=1.0, beta=b
+                base_load_only, prices, shiftable, lambda_=lam
             )
             scan_costs.append(cost_b)
             scan_peaks.append(peak_b)
@@ -226,32 +226,32 @@ KEY INSIGHT
         ax1 = plt.gca()
         ax2 = ax1.twinx()
         
-        line1, = ax1.plot(betas, scan_costs, 'o-', color='#E76F51', linewidth=2.5, 
+        line1, = ax1.plot(lambdas, scan_costs, 'o-', color='#E76F51', linewidth=2.5, 
                          markersize=6, label='Total Cost (NOK)')
-        line2, = ax2.plot(betas, scan_peaks, 's-', color='#2A9D8F', linewidth=2.5, 
+        line2, = ax2.plot(lambdas, scan_peaks, 's-', color='#2A9D8F', linewidth=2.5, 
                          markersize=6, label='Peak Load (kWh)')
         
-        ax1.set_xlabel('β (Peak Load Penalty Weight)', fontsize=12, fontweight='bold')
+        ax1.set_xlabel('λ (Peak Load Penalty Weight)', fontsize=12, fontweight='bold')
         ax1.set_ylabel('Total Cost (NOK/day)', fontsize=12, fontweight='bold', color='#E76F51')
         ax2.set_ylabel('Peak Load (kWh)', fontsize=12, fontweight='bold', color='#2A9D8F')
         ax1.tick_params(axis='y', labelcolor='#E76F51')
         ax2.tick_params(axis='y', labelcolor='#2A9D8F')
         
-        # Mark the chosen beta
-        ax1.axvline(x=beta, color='gray', linestyle='--', alpha=0.5)
-        ax1.text(beta, ax1.get_ylim()[1], f'β={beta}\n(chosen)', 
+        # Mark the chosen lambda
+        ax1.axvline(x=lambda_, color='gray', linestyle='--', alpha=0.5)
+        ax1.text(lambda_, ax1.get_ylim()[1], f'λ={lambda_}\n(chosen)', 
                 ha='center', va='top', fontsize=9, color='gray')
         
         lines = [line1, line2]
         labels = [l.get_label() for l in lines]
         ax1.legend(lines, labels, loc='center right', fontsize=11)
         
-        plt.title('Sensitivity Analysis: β Trade-off', fontsize=14, fontweight='bold')
+        plt.title('Sensitivity Analysis: λ Trade-off', fontsize=14, fontweight='bold')
         plt.grid(axis='x', alpha=0.3, linestyle='--')
         fig.tight_layout()
         
         pdf.savefig(fig, bbox_inches='tight')
-        plt.savefig(os.path.join(output_folder, '05_q4_beta_sensitivity.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '05_q4_lambda_sensitivity.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Metadata
