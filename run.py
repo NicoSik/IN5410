@@ -1,4 +1,5 @@
-"""Main program - Energy optimization."""
+"""Main program - Energy optimization (Question 2)."""
+import json
 from data_setup import (
     generate_prices,
     get_non_shiftable_appliances,
@@ -10,6 +11,8 @@ from data_setup import (
 from optimize import optimize
 from helpers import calculate_cost, print_summary
 
+PRICES_FILE = "prices_q2.json"
+
 
 def main():
     """Run energy optimization."""
@@ -20,6 +23,11 @@ def main():
     prices = generate_prices(seed=42)
     non_shiftable = get_non_shiftable_appliances()
     shiftable = get_shiftable_appliances()
+    
+    # Save prices for reuse in Q4
+    with open(PRICES_FILE, 'w') as f:
+        json.dump(prices, f)
+    print(f"💾 Prices saved to {PRICES_FILE} (for Q4 reuse)")
     
     print_data_summary(prices, non_shiftable, shiftable)
     

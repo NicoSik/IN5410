@@ -51,12 +51,12 @@ def generate_simple_report(
         summary = f"""
 RESULTS
 
-Naive Schedule Cost:      {naive_cost:.2f} NOK/day
-Optimal Schedule Cost:    {optimal_cost:.2f} NOK/day
+Naive Schedule Cost:      {naive_cost:.2f} kr/day
+Optimal Schedule Cost:    {optimal_cost:.2f} kr/day
 
-Daily Savings:            {savings:.2f} NOK/day
+Daily Savings:            {savings:.2f} kr/day
 Savings Percentage:       {savings_pct:.1f}%
-Annual Savings:           {savings * 365:.2f} NOK/year
+Annual Savings:           {savings * 365:.2f} kr/year
 
 OPTIMAL SCHEDULE
 """
@@ -95,7 +95,7 @@ OPTIMAL SCHEDULE
                     ha='center', va='bottom', fontsize=9, fontweight='bold')
         
         plt.xlabel('Time (hour)', fontsize=12, fontweight='bold')
-        plt.ylabel('Price (NOK/kWh)', fontsize=12, fontweight='bold')
+        plt.ylabel('Price (NOK/kr per kWh)', fontsize=12, fontweight='bold')
         plt.title('Electricity Spot Prices', fontsize=14, fontweight='bold')
         plt.xticks(hours, [f'{h:02d}:00' for h in hours], rotation=45)
         plt.grid(axis='both', alpha=0.3, linestyle='--')
@@ -107,8 +107,7 @@ OPTIMAL SCHEDULE
         plt.close()
         
         # Page 3: Naive Load with Stacked Shiftable Appliances
-        fig = plt.figure(figsize=(12, 6))
-        plt.clf()
+        fig, ax = plt.subplots(figsize=(14, 6))
         
         # Calculate base load (non-shiftable)
         from data_setup import calculate_worst_schedule, calculate_base_load, get_non_shiftable_appliances
@@ -144,20 +143,33 @@ OPTIMAL SCHEDULE
         # Create stacked bar chart for naive
         bottom = base_load_only[:]
         
-        plt.bar(hours, base_load_only, label='Non-shiftable', alpha=0.8, color='#6C757D')
+        ax.bar(hours, base_load_only, label='Non-shiftable', alpha=0.8, color='#6C757D')
         
         for app in shiftable:
             name = app['name']
             load = shiftable_loads_naive[name]
-            plt.bar(hours, load, bottom=bottom, label=name, alpha=0.9, color=colors[name])
+            ax.bar(hours, load, bottom=bottom, label=name, alpha=0.9, color=colors[name])
             bottom = [bottom[h] + load[h] for h in range(24)]
         
-        plt.xlabel('Hour', fontsize=12, fontweight='bold')
-        plt.ylabel('Load (kWh)', fontsize=12, fontweight='bold')
-        plt.title('Worst Schedule - Load Distribution', fontsize=14, fontweight='bold')
-        plt.xticks(hours, [f'{h:02d}:00' for h in hours], rotation=45)
-        plt.legend(loc='upper left')
-        plt.grid(axis='y', alpha=0.3)
+        # Add hourly cost labels on top of each bar
+        total_load_naive = [base_load_only[h] + sum(shiftable_loads_naive[app['name']][h] for app in shiftable) for h in range(24)]
+        for h in hours:
+            hourly_cost = total_load_naive[h] * prices[h]
+            if hourly_cost > 0.01:
+                ax.text(h, total_load_naive[h] + 0.05, f'{hourly_cost:.2f} kr',
+                       ha='center', va='bottom', fontsize=7, fontweight='bold')
+        
+        # Adjust y-axis to make room for cost labels
+        y_max = max(total_load_naive) * 1.18
+        ax.set_ylim(0, y_max)
+        
+        ax.set_xlabel('Hour', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Load (kWh)', fontsize=12, fontweight='bold')
+        ax.set_title('Worst Schedule - Load Distribution (cost per hour in NOK/kr)', fontsize=14, fontweight='bold')
+        ax.set_xticks(hours)
+        ax.set_xticklabels([f'{h:02d}:00' for h in hours], rotation=45)
+        ax.legend(loc='upper right')
+        ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
         # Save to PDF and as image
@@ -166,8 +178,7 @@ OPTIMAL SCHEDULE
         plt.close()
         
         # Page 4: Optimal Load with Stacked Shiftable Appliances
-        fig = plt.figure(figsize=(12, 6))
-        plt.clf()
+        fig, ax = plt.subplots(figsize=(14, 6))
         
         # Create load profiles for each shiftable appliance (optimal schedule)
         shiftable_loads_optimal = {}
@@ -180,20 +191,33 @@ OPTIMAL SCHEDULE
         # Create stacked bar chart for optimal
         bottom = base_load_only[:]
         
-        plt.bar(hours, base_load_only, label='Non-shiftable', alpha=0.8, color='#6C757D')
+        ax.bar(hours, base_load_only, label='Non-shiftable', alpha=0.8, color='#6C757D')
         
         for app in shiftable:
             name = app['name']
             load = shiftable_loads_optimal[name]
-            plt.bar(hours, load, bottom=bottom, label=name, alpha=0.9, color=colors[name])
+            ax.bar(hours, load, bottom=bottom, label=name, alpha=0.9, color=colors[name])
             bottom = [bottom[h] + load[h] for h in range(24)]
         
-        plt.xlabel('Hour', fontsize=12, fontweight='bold')
-        plt.ylabel('Load (kWh)', fontsize=12, fontweight='bold')
-        plt.title('Optimal Schedule - Load Distribution', fontsize=14, fontweight='bold')
-        plt.xticks(hours, [f'{h:02d}:00' for h in hours], rotation=45)
-        plt.legend(loc='upper left')
-        plt.grid(axis='y', alpha=0.3)
+        # Add hourly cost labels on top of each bar
+        total_load = [base_load_only[h] + sum(shiftable_loads_optimal[app['name']][h] for app in shiftable) for h in range(24)]
+        for h in hours:
+            hourly_cost = total_load[h] * prices[h]
+            if hourly_cost > 0.01:
+                ax.text(h, total_load[h] + 0.05, f'{hourly_cost:.2f} kr',
+                       ha='center', va='bottom', fontsize=7, fontweight='bold')
+        
+        # Adjust y-axis to make room for cost labels
+        y_max = max(total_load) * 1.18
+        ax.set_ylim(0, y_max)
+        
+        ax.set_xlabel('Hour', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Load (kWh)', fontsize=12, fontweight='bold')
+        ax.set_title('Optimal Schedule - Load Distribution (cost per hour in NOK/kr)', fontsize=14, fontweight='bold')
+        ax.set_xticks(hours)
+        ax.set_xticklabels([f'{h:02d}:00' for h in hours], rotation=45)
+        ax.legend(loc='upper right')
+        ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
         # Save to PDF and as image
@@ -201,7 +225,72 @@ OPTIMAL SCHEDULE
         plt.savefig(os.path.join(output_folder, '04_optimal_schedule.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
-        # Page 5: Cost comparison
+        # Page 5: Combined – Spot Price, Load & Hourly Cost (single graph)
+        fig, ax_load = plt.subplots(figsize=(14, 7))
+        ax_price = ax_load.twinx()
+        
+        bar_width = 0.7
+        
+        # Compute total optimal load per hour
+        total_load_opt = [base_load_only[h] + sum(shiftable_loads_optimal[app['name']][h] for app in shiftable) for h in range(24)]
+        hourly_costs = [total_load_opt[h] * prices[h] for h in range(24)]
+        
+        # --- Stacked bars for energy load (left y-axis) ---
+        bottom_stack = base_load_only[:]
+        ax_load.bar(hours, base_load_only, width=bar_width, label='Non-shiftable', alpha=0.8, color='#6C757D')
+        for app in shiftable:
+            name = app['name']
+            load = shiftable_loads_optimal[name]
+            ax_load.bar(hours, load, width=bar_width, bottom=bottom_stack, label=name, alpha=0.9, color=colors[name])
+            bottom_stack = [bottom_stack[h] + load[h] for h in range(24)]
+        
+        # --- Cost labels on top of each bar ---
+        for h in hours:
+            if hourly_costs[h] > 0.01:
+                ax_load.text(h, total_load_opt[h] + 0.08, f'{hourly_costs[h]:.2f} kr',
+                            ha='center', va='bottom', fontsize=7, fontweight='bold',
+                            color='#333333')
+        
+        # --- Spot price line (right y-axis) ---
+        line = ax_price.plot(hours, prices, linewidth=2.5, color='#E76F51', marker='o',
+                            markersize=5, label='Spot Price', zorder=5)
+        
+        # Price value labels along the line
+        for h in hours:
+            ax_price.text(h, prices[h] + 0.03, f'{prices[h]:.2f}',
+                         ha='center', va='bottom', fontsize=7, color='#E76F51', fontweight='bold')
+        
+        # --- Axes formatting ---
+        y_max_load = max(total_load_opt) * 1.25
+        ax_load.set_ylim(0, y_max_load)
+        ax_price.set_ylim(0, max(prices) * 1.30)
+        
+        ax_load.set_xlabel('Hour', fontsize=12, fontweight='bold')
+        ax_load.set_ylabel('Energy Load (kWh)', fontsize=12, fontweight='bold')
+        ax_price.set_ylabel('Spot Price (NOK/kr per kWh)', fontsize=12, fontweight='bold', color='#E76F51')
+        ax_price.tick_params(axis='y', labelcolor='#E76F51')
+        
+        ax_load.set_xticks(hours)
+        ax_load.set_xticklabels([f'{h:02d}:00' for h in hours], rotation=45)
+        ax_load.grid(axis='y', alpha=0.2, linestyle='--')
+        
+        ax_load.set_title('Optimal Schedule — Spot Price, Energy Load & Hourly Cost',
+                         fontsize=14, fontweight='bold', pad=12)
+        
+        # Combined legend (bars from left axis + line from right axis)
+        handles_load, labels_load = ax_load.get_legend_handles_labels()
+        handles_price, labels_price = ax_price.get_legend_handles_labels()
+        ax_load.legend(handles_load + handles_price, labels_load + labels_price,
+                      loc='upper right', fontsize=9)
+        
+        plt.tight_layout()
+        
+        # Save to PDF and as image
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '05_combined_overview.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        # Page 6: Cost comparison
         fig = plt.figure(figsize=(8, 5))
         plt.clf()
         
@@ -213,18 +302,18 @@ OPTIMAL SCHEDULE
         
         for bar, val in zip(bars, values):
             plt.text(bar.get_x() + bar.get_width()/2., val,
-                    f'{val:.2f} NOK', ha='center', va='bottom', 
+                    f'{val:.2f} kr', ha='center', va='bottom', 
                     fontsize=14, fontweight='bold')
         
         plt.xlabel('Schedule Type', fontsize=12, fontweight='bold')
-        plt.ylabel('Cost (NOK)', fontsize=12, fontweight='bold')
+        plt.ylabel('Cost (NOK/kr)', fontsize=12, fontweight='bold')
         plt.title('Cost Comparison', fontsize=14, fontweight='bold')
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
         # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
-        plt.savefig(os.path.join(output_folder, '05_cost_comparison.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '06_cost_comparison.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Metadata
