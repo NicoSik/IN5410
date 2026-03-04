@@ -47,12 +47,12 @@ def optimize_neighborhood(
     return all_schedules, neighborhood_load, total_cost
 
 
-def calculate_naive_neighborhood_cost(
+def calculate_worst_neighborhood_cost(
     households: List[Dict],
     prices: List[float]
 ) -> Tuple[List[float], float]:
     """
-    Calculate neighborhood cost with naive scheduling.
+    Calculate neighborhood cost with worst scheduling.
     
     Args:
         households: List of household configurations
@@ -69,12 +69,12 @@ def calculate_naive_neighborhood_cost(
         base_load = household['base_load']
         shiftable = household['shiftable']
         
-        # Calculate naive schedule for this household
-        naive_load = calculate_worst_schedule(base_load, shiftable)
+        # Calculate worst schedule for this household
+        worst_load = calculate_worst_schedule(base_load, shiftable)
         
         # Add to neighborhood total
         for h in range(24):
-            neighborhood_load[h] += naive_load[h]
+            neighborhood_load[h] += worst_load[h]
     
     total_cost = calculate_cost(neighborhood_load, prices)
     
@@ -84,32 +84,32 @@ def calculate_naive_neighborhood_cost(
 def print_neighborhood_results(
     households: List[Dict],
     schedules: Dict[int, Dict],
-    naive_cost: float,
+    worst_cost: float,
     optimal_cost: float,
     show_all_schedules: bool = False
 ) -> None:
     """Print optimization results for the neighborhood."""
-    savings = naive_cost - optimal_cost
-    savings_pct = (savings / naive_cost * 100) if naive_cost > 0 else 0
+    savings = worst_cost - optimal_cost
+    savings_pct = (savings / worst_cost * 100) if worst_cost > 0 else 0
     
     print("\n" + "="*60)
     print("NEIGHBORHOOD OPTIMIZATION RESULTS")
     print("="*60)
     
     print(f"\n💰 Costs:")
-    print(f"  Naive schedule:     {naive_cost:.2f} NOK/day")
+    print(f"  Worst schedule:     {worst_cost:.2f} NOK/day")
     print(f"  Optimal schedule:   {optimal_cost:.2f} NOK/day")
     print(f"  Daily savings:      {savings:.2f} NOK/day ({savings_pct:.1f}%)")
     print(f"  Annual savings:     {savings * 365:.2f} NOK/year")
     
     # Calculate per-household averages
     num_households = len(households)
-    avg_naive = naive_cost / num_households
+    avg_worst = worst_cost / num_households
     avg_optimal = optimal_cost / num_households
     avg_savings = savings / num_households
     
     print(f"\n📊 Per Household (average):")
-    print(f"  Naive cost:     {avg_naive:.2f} NOK/day")
+    print(f"  Worst cost:     {avg_worst:.2f} NOK/day")
     print(f"  Optimal cost:   {avg_optimal:.2f} NOK/day")
     print(f"  Savings:        {avg_savings:.2f} NOK/day")
     print(f"  Annual savings: {avg_savings * 365:.2f} NOK/year")

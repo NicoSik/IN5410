@@ -47,13 +47,13 @@ def main():
     
     # 6. Generate PDF report (optional)
     try:
-        from report_simple import generate_simple_report
+        from report_q2 import generate_simple_report
         from datetime import datetime
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        pdf_filename = f"energy_report_{timestamp}.pdf"
+        pdf_filename = f"q2_energy_report_{timestamp}.pdf"
         
-        print(f"\n📊 Generating PDF report: {pdf_filename}")
+        print(f"\n📊 Generating Q2 PDF report: {pdf_filename}")
         generate_simple_report(
             filename=pdf_filename,
             prices=prices,

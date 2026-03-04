@@ -3,7 +3,7 @@ from data_setup import generate_prices
 from neighborhood_data_q3 import create_neighborhood, print_neighborhood_summary
 from optimize_neighborhood_q3 import (
     optimize_neighborhood,
-    calculate_naive_neighborhood_cost,
+    calculate_worst_neighborhood_cost,
     print_neighborhood_results
 )
 
@@ -29,9 +29,9 @@ def main():
     # 3. Print configuration
     print_neighborhood_summary(households, prices)
     
-    # 4. Calculate naive cost (no optimization)
-    print("\n⏳ Calculating naive schedule cost...")
-    naive_load, naive_cost = calculate_naive_neighborhood_cost(households, prices)
+    # 4. Calculate worst cost (no optimization)
+    print("\n⏳ Calculating worst schedule cost...")
+    worst_load, worst_cost = calculate_worst_neighborhood_cost(households, prices)
     
     # 5. Optimize neighborhood
     print("⚙️  Optimizing neighborhood schedule...")
@@ -41,7 +41,7 @@ def main():
     print_neighborhood_results(
         households,
         schedules,
-        naive_cost,
+        worst_cost,
         optimal_cost,
         show_all_schedules=False  # Set to True to see all household schedules
     )
@@ -70,6 +70,30 @@ def main():
                     start = value
                     end = (start + duration) % 24
                 print(f"    {name:15s} → {start:02d}:00 - {end:02d}:00 ({duration}h)")
+
+    # 8. Generate PDF report
+    try:
+        from report_q3 import generate_q3_report
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        pdf_filename = f"q3_neighborhood_report_{timestamp}.pdf"
+
+        print(f"\n📊 Generating Q3 PDF report: {pdf_filename}")
+        generate_q3_report(
+            filename=pdf_filename,
+            prices=prices,
+            households=households,
+            schedules=schedules,
+            worst_load=worst_load,
+            worst_cost=worst_cost,
+            optimal_load=optimal_load,
+            optimal_cost=optimal_cost,
+        )
+    except Exception as e:
+        print(f"\n⚠️  Could not generate PDF: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
