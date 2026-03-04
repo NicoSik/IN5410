@@ -51,7 +51,7 @@ def generate_simple_report(
         summary = f"""
 RESULTS
 
-Naive Schedule Cost:      {naive_cost:.2f} kr/day
+Worst Schedule Cost:      {naive_cost:.2f} kr/day
 Optimal Schedule Cost:    {optimal_cost:.2f} kr/day
 
 Daily Savings:            {savings:.2f} kr/day
@@ -63,13 +63,22 @@ OPTIMAL SCHEDULE
         # Create a map of appliance names to their info
         app_map = {app['name']: app for app in shiftable}
         
-        for name, start in sorted(schedule.items()):
-            if name in app_map:
+        for name, value in sorted(schedule.items()):
+            if isinstance(value, (list, tuple)):
+                # Continuous LP: power profile
+                active = [(h, value[h]) for h in range(24) if value[h] > 0.01]
+                if active:
+                    h_start = active[0][0]
+                    h_end = (active[-1][0] + 1) % 24
+                    total_e = sum(value)
+                    summary += f"\n  {name:20s} → {h_start:02d}:00-{h_end:02d}:00 ({total_e:.2f} kWh, {len(active)}h)"
+            elif name in app_map:
+                start = value
                 duration = app_map[name]['duration']
                 end = (start + duration) % 24
                 summary += f"\n  {name:20s} → {start:02d}:00 - {end:02d}:00 ({duration}h)"
             else:
-                summary += f"\n  {name:20s} → {start:02d}:00"
+                summary += f"\n  {name:20s} → {value:02d}:00"
         
         plt.text(0.1, 0.05, summary, fontsize=11, verticalalignment='bottom',
                 family='monospace', bbox=dict(boxstyle='round', facecolor='white'))
@@ -174,7 +183,7 @@ OPTIMAL SCHEDULE
         
         # Save to PDF and as image
         pdf.savefig(fig, bbox_inches='tight')
-        plt.savefig(os.path.join(output_folder, '03_naive_schedule.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_folder, '03_worst_schedule.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Page 4: Optimal Load with Stacked Shiftable Appliances
@@ -183,10 +192,17 @@ OPTIMAL SCHEDULE
         # Create load profiles for each shiftable appliance (optimal schedule)
         shiftable_loads_optimal = {}
         for app in shiftable:
-            load = [0.0] * 24
-            start = schedule.get(app['name'], app['allowed_hours'][0])
-            add_appliance_to_load(load, start, app['duration'], app['energy'])
-            shiftable_loads_optimal[app['name']] = load
+            name = app['name']
+            value = schedule.get(name)
+            if isinstance(value, (list, tuple)):
+                # Continuous LP: value is already the 24h power profile
+                shiftable_loads_optimal[name] = list(value)
+            else:
+                # ILP / legacy: value is a start hour
+                load = [0.0] * 24
+                start = value if value is not None else app['allowed_hours'][0]
+                add_appliance_to_load(load, start, app['duration'], app['energy'])
+                shiftable_loads_optimal[name] = load
         
         # Create stacked bar chart for optimal
         bottom = base_load_only[:]

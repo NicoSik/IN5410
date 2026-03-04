@@ -1,7 +1,7 @@
 """Main program for neighborhood optimization (Question 3)."""
 from data_setup import generate_prices
-from neighborhood_data import create_neighborhood, print_neighborhood_summary
-from optimize_neighborhood import (
+from neighborhood_data_q3 import create_neighborhood, print_neighborhood_summary
+from optimize_neighborhood_q3 import (
     optimize_neighborhood,
     calculate_naive_neighborhood_cost,
     print_neighborhood_results
@@ -55,11 +55,20 @@ def main():
         ev_marker = "🚗" if household['has_ev'] else "  "
         
         print(f"\n  {ev_marker} Household {household_id}:")
-        for name, start in sorted(schedule.items()):
+        for name, value in sorted(schedule.items()):
             app = next((a for a in household['shiftable'] if a['name'] == name), None)
             if app:
                 duration = app['duration']
-                end = (start + duration) % 24
+                if isinstance(value, (list, tuple)):
+                    active = [h for h in range(24) if value[h] > 0.01]
+                    if active:
+                        start = active[0]
+                        end = (active[-1] + 1) % 24
+                    else:
+                        start, end = 0, 0
+                else:
+                    start = value
+                    end = (start + duration) % 24
                 print(f"    {name:15s} → {start:02d}:00 - {end:02d}:00 ({duration}h)")
 
 

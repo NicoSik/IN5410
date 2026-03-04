@@ -23,7 +23,7 @@ from data_setup import (
     print_data_summary
 )
 from optimize import optimize
-from optimize_peak import optimize_with_peak_constraint, print_q4_comparison
+from optimize_peak_q4 import optimize_with_peak_constraint, print_q4_comparison
 from helpers import calculate_cost
 
 PRICES_FILE = "prices_q2.json"

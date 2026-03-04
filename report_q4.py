@@ -16,10 +16,10 @@ import os
 def generate_q4_report(
     filename: str,
     prices: List[float],
-    q2_schedule: Dict[str, int],
+    q2_schedule: dict,
     q2_load: List[float],
     q2_cost: float,
-    q4_schedule: Dict[str, int],
+    q4_schedule: dict,
     q4_load: List[float],
     q4_cost: float,
     q4_peak: float,
@@ -91,11 +91,27 @@ SCHEDULES
 
         app_map = {app['name']: app for app in shiftable}
         for name in sorted(q2_schedule.keys()):
-            q2_start = q2_schedule[name]
-            q4_start = q4_schedule[name]
+            q2_val = q2_schedule[name]
+            q4_val = q4_schedule[name]
             dur = app_map[name]['duration']
-            q2_end = (q2_start + dur) % 24
-            q4_end = (q4_start + dur) % 24
+
+            # Handle power profiles (list) — find first active hour as "start"
+            if isinstance(q2_val, (list, tuple)):
+                active_q2 = [h for h in range(24) if q2_val[h] > 0.01]
+                q2_start = active_q2[0] if active_q2 else 0
+                q2_end = (active_q2[-1] + 1) % 24 if active_q2 else 0
+            else:
+                q2_start = q2_val
+                q2_end = (q2_start + dur) % 24
+
+            if isinstance(q4_val, (list, tuple)):
+                active_q4 = [h for h in range(24) if q4_val[h] > 0.01]
+                q4_start = active_q4[0] if active_q4 else 0
+                q4_end = (active_q4[-1] + 1) % 24 if active_q4 else 0
+            else:
+                q4_start = q4_val
+                q4_end = (q4_start + dur) % 24
+
             changed = " ◄" if q2_start != q4_start else ""
             summary += f"\n  {name:20s}  {q2_start:02d}:00-{q2_end:02d}:00       {q4_start:02d}:00-{q4_end:02d}:00{changed}"
         
@@ -210,7 +226,7 @@ KEY INSIGHT
         fig = plt.figure(figsize=(12, 6))
         plt.clf()
         
-        from optimize_peak import optimize_with_peak_constraint
+        from optimize_peak_q4 import optimize_with_peak_constraint
         
         lambdas = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10]
         scan_costs = []
@@ -273,8 +289,15 @@ def _plot_stacked_load(ax, hours, base_load, schedule, shiftable, colors, title,
     
     for app in shiftable:
         load = [0.0] * 24
-        start = schedule.get(app['name'], app['allowed_hours'][0])
-        add_appliance_to_load(load, start, app['duration'], app['energy'])
+        value = schedule.get(app['name'])
+        if isinstance(value, (list, tuple)):
+            # Power profile from MILP/LP
+            for h in range(24):
+                load[h] = value[h]
+        else:
+            # Integer start hour (legacy)
+            start = value if value is not None else app['allowed_hours'][0]
+            add_appliance_to_load(load, start, app['duration'], app['energy'])
         ax.bar(hours, load, bottom=bottom, label=app['name'], alpha=0.9, color=colors[app['name']])
         bottom = [bottom[h] + load[h] for h in range(24)]
     

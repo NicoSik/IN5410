@@ -110,24 +110,28 @@ def get_shiftable_appliances() -> List[dict]:
             'name': 'Dishwasher',
             'energy': 1.44,  # kWh
             'duration': 2,   # hours
+            'p_max': 0.8,    # kW max power
             'allowed_hours': list(range(0, 24))  # Any hour /using app
         },
         {
             'name': 'Laundry',
             'energy': 1.94,
             'duration': 2,
+            'p_max': 1.1,    # kW max power
             'allowed_hours': list(range(12, 23))  # 12:00-22:00
         },
         {
             'name': 'Dryer',
             'energy': 2.50,
             'duration': 2,
+            'p_max': 1.25,   # kW max power
             'allowed_hours': list(range(14, 24)) + list(range(0, 1))  # 14:00-00:00
         },
         {
             'name': 'EV Charging',
             'energy': 9.90,
             'duration': 6,
+            'p_max': 3.0,    # kW max power
             'allowed_hours': list(range(16, 24)) + list(range(0, 8))  # 16:00-07:00
         }
     ]
